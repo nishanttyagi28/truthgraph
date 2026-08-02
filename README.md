@@ -7,11 +7,11 @@
 
 TruthGraph is an explainable claim-verification service built with Python and FastAPI. It compares a claim against multiple pieces of evidence, measures textual relevance, considers source reliability, detects contradictions, and returns a structured verdict with a confidence score.
 
+Follow me on X [@tnishant838](https://x.com/tnishant838) for this journey.
+
 ## Build Note
 
-As I shared on my X account [@tnishant838](https://x.com/tnishant838), I am moving towards writing code manually and using AI only when I am genuinely stuck. TruthGraph is part of that coding-first learning commitment.
-
-This release was developed as a guided learning build. I worked through the project structure, execution, debugging, testing, and API validation while using AI as a mentor during implementation. My objective is not to present the development process as completely AI-free, but to understand, review, and take ownership of everything I ship.
+As promised on my X account [@tnishant838](https://x.com/tnishant838), TruthGraph was built as part of my hands-on coding practice. I personally configured, ran, debugged, tested, validated, and shipped the system while using AI assistance during parts of the implementation and debugging process.
 
 ## Features
 
@@ -255,9 +255,7 @@ Source reliability is currently supplied by the caller. The confidence score rep
 
 ## Next Version
 
-The next version of TruthGraph will be significantly more advanced. It will move beyond deterministic keyword matching toward a complete AI-assisted investigation and verification workflow.
-
-I will use coding agents to accelerate parts of its implementation. However, the original idea, product direction, system design, architecture, verification philosophy, and final technical decisions will remain mine. Agent-generated implementation will be reviewed, tested, and accepted only when it matches the intended architecture.
+The next version of TruthGraph will be significantly more advanced. I will use coding agents to maximize development speed and output. However, the core idea, product direction, system design, architecture, verification philosophy, and final technical decisions will remain mine. All agent-generated implementation will be reviewed, tested, and accepted against my intended architecture.
 
 Planned additions include:
 
@@ -279,4 +277,4 @@ Planned additions include:
 
 Built by [Nishant Tyagi](https://github.com/nishanttyagi28).
 
-Follow the development journey on X: [@tnishant838](https://x.com/tnishant838).
+Follow me on X [@tnishant838](https://x.com/tnishant838) for this journey.
