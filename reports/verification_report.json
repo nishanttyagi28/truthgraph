@@ -1,0 +1,30 @@
+{
+  "claim": "The Earth has one natural satellite.",
+  "verdict": "supported",
+  "confidence": 0.627,
+  "supporting_evidence": [
+    {
+      "text": "NASA confirms that Earth has one natural satellite called the Moon.",
+      "source": "NASA",
+      "reliability": 0.98
+    },
+    {
+      "text": "Earth has one natural satellite, which is commonly known as the Moon.",
+      "source": "Astronomy Textbook",
+      "reliability": 0.9
+    }
+  ],
+  "contradicting_evidence": [
+    {
+      "text": "Earth does not have one natural satellite according to this anonymous post.",
+      "source": "Anonymous Blog",
+      "reliability": 0.3
+    }
+  ],
+  "matched_keywords": [
+    "earth",
+    "natural",
+    "one",
+    "satellite"
+  ]
+}
