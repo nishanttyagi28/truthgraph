@@ -26,5 +26,46 @@
     "natural",
     "one",
     "satellite"
-  ]
+  ],
+  "reasons": [
+    "support: source='NASA' relevance=1.000 (kw=1.000) reliability=0.98 → support",
+    "support: source='Astronomy Textbook' relevance=1.000 (kw=1.000) reliability=0.90 → support",
+    "contradict: source='Anonymous Blog' relevance=1.000 (kw=1.000) reliability=0.30 → contradict",
+    "irrelevant: source='Space Magazine' relevance=0.000 (kw=0.000) reliability=0.75 → irrelevant",
+    "Support score 1.880 exceeds contradiction 0.300."
+  ],
+  "subclaims": [
+    {
+      "text": "The Earth has one natural satellite.",
+      "verdict": "supported",
+      "confidence": 0.627,
+      "matched_keywords": [
+        "earth",
+        "natural",
+        "one",
+        "satellite"
+      ],
+      "reasons": [
+        "support: source='NASA' relevance=1.000 (kw=1.000) reliability=0.98 → support",
+        "support: source='Astronomy Textbook' relevance=1.000 (kw=1.000) reliability=0.90 → support",
+        "contradict: source='Anonymous Blog' relevance=1.000 (kw=1.000) reliability=0.30 → contradict",
+        "irrelevant: source='Space Magazine' relevance=0.000 (kw=0.000) reliability=0.75 → irrelevant",
+        "Support score 1.880 exceeds contradiction 0.300."
+      ]
+    }
+  ],
+  "breakdown": {
+    "support_score": 1.88,
+    "contradiction_score": 0.3,
+    "scoring_mode": "keyword",
+    "keyword_weight": 1.0,
+    "semantic_weight": 0.0,
+    "relevant_evidence_count": 3,
+    "subclaim_count": 1
+  },
+  "meta": {
+    "use_semantic": false,
+    "use_registry": false,
+    "decomposed": false
+  }
 }
