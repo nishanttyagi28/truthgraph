@@ -1,0 +1,9 @@
+claim:
+  text: Earth has one natural satellite. Mars has two moons.
+evidence:
+  - text: Earth has one natural satellite called the Moon.
+    source: NASA
+    reliability: 0.95
+  - text: Mars has two moons named Phobos and Deimos.
+    source: Astronomy Textbook
+    reliability: 0.90
