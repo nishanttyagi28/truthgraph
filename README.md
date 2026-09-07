@@ -1,139 +1,172 @@
 # TruthGraph
 
-**You bring the evidence. TruthGraph returns an inspectable verdict — supported, contradicted, or insufficient — you can put in a CI gate or an agent loop.**
+**Deterministic evidence gate for AI agents & RAG — `ALLOW` / `REVIEW` / `BLOCK` with an inspectable dossier.**
+
+You bring the evidence (or RAG citations). TruthGraph returns a verdict *and* an action decision you can put in front of a tool call, a citation, or a CI job — without a paid LLM judge.
 
 [![CI](https://github.com/nishanttyagi28/truthgraph/actions/workflows/ci.yml/badge.svg)](https://github.com/nishanttyagi28/truthgraph/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-REST_API-009688?logo=fastapi&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-34_passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-71_passing-brightgreen)
 
 Built by [Nishant Tyagi](https://github.com/nishanttyagi28) · follow the build on X [@tnishant838](https://x.com/tnishant838)
 
 ---
 
-## The problem
+## Why this sells
 
-LLMs and agents make claims constantly — captions, tool answers, RAG citations, “facts” in a reply.
+| Business outcome | How TruthGraph helps |
+|------------------|----------------------|
+| **Reduce hallucination-driven actions** | Gate tool calls: only `ALLOW` when evidence supports the claim above a threshold |
+| **CI-gate agent claims** | Golden suite + lockfile fails the build when expected verdicts flip |
+| **Audit trail for stakeholders** | Markdown/JSON dossier: claim, evidence, scores, decision, policy, timestamp |
+| **RAG citation honesty** | Treat `answer` + `citations[]` as claim/evidence with citation-aware reasons |
 
-Black-box judges don’t help much when you need to **debug**. A single score hides *why*. A paid LLM-as-judge adds cost, drift, and another model you can’t inspect. And if the evidence isn’t yours, you’re not evaluating your pipeline — you’re hoping the internet agrees.
-
-You need something narrower and more honest: **given the evidence you already have**, does this claim look supported, contradicted, or under-specified — with reasons you can read.
-
----
-
-## What TruthGraph is
-
-TruthGraph is an **explainable claim-verification service**. You POST a claim and a list of evidence snippets. It does **not** browse the web or invent facts. It compares texts with a deterministic core (keywords, negation, numbers, source reliability), optionally splits compound claims into atomic pieces, and returns a structured dossier:
-
-- `verdict`: `supported` | `contradicted` | `insufficient`
-- `confidence` grounded in the submitted evidence (not a world-truth probability)
-- matched keywords, reasons, and per-subclaim breakdowns when decomposition runs
-
-**Evidence in → inspectable dossier out.** Same contract my [VisionEval](https://github.com/nishanttyagi28/VisionEval) consumer expects (`verdict` + `confidence` + `matched_keywords` + evidence lists), with richer v2 fields on top.
-
-No paid API. No model download for the default path. FastAPI, CLI, optional Streamlit, Docker, CI.
+**Not** “another fact checker that browses the web.” **Not** “LLM-as-judge.” Evidence in → inspectable dossier + decision out.
 
 ---
 
-## Who it’s for
-
-- **Agent builders** who want a cheap, inspectable check before an agent trusts its own answer
-- **RAG / eval engineers** gating “does this citation actually support the claim?”
-- **VisionEval-style caption checks** — treat a model caption as a claim against ground-truth text
-- **CI gates** — fail the build when a locked claim set flips from supported to contradicted
-
-If you need a full fact-checker that crawls the web, this isn’t that product. If you need a **local, explainable support/contradict layer over your evidence**, it is.
-
----
-
-## What I built
-
-### Deterministic verification core
-
-Keyword relevance, stop-word filtering, negation mismatch, numerical contradiction, reliability-weighted scoring — all inspectable.
-
-```bash
-python -m uvicorn app.api:app --reload
-# POST /verify  →  supported | contradicted | insufficient
-```
-
-**Why it helps:** You can explain a fail in review without opening another LLM transcript.
-
-### Claim decomposition → rolled-up verdict
-
-Compound claims split into atomic sub-claims, verified one by one, then rolled into a parent verdict with reasons.
-
-**Why it helps:** “Half right” stops looking like a clean pass. You see which piece broke.
-
-### Hybrid scoring (optional)
-
-Default path stays keyword/deterministic for CI. Flip a flag for offline TF-IDF cosine blended with keywords — no model download, no network.
-
-**Why it helps:** Slightly better lexical overlap when wording drifts, without pulling torch or hitting an API.
-
-### Source reputation registry
-
-Built-in defaults (NASA, CDC, Wikipedia, anonymous blog, …) with caller override. `GET /sources` lists them.
-
-**Why it helps:** Reliability isn’t a mystery constant — you can see and override it.
-
-### Batch API, CLI, history, demo surface
-
-- `POST /verify/batch`, `GET /health`, `GET /sources`
-- CLI: JSON/YAML in, `--json` out
-- Optional SQLite history behind `TRUTHGRAPH_HISTORY=1` (off by default)
-- Streamlit demo (`streamlit_app.py`)
-- Dockerfile + GitHub Actions pytest CI
-
-**Why it helps:** Same engine from a curl, a pipeline job, or a quick UI — without rewriting the core.
-
----
-
-## Quick demo
+## 60-second sell demo
 
 ```bash
 pip install -r requirements.txt
+
+# 1) Agent tool gate — ALLOW / REVIEW / BLOCK
+python -m app.cli gate examples/sample_claim.json --json --no-decompose
+
+# 2) RAG citation gate
+python -m app.cli gate examples/sample_rag.json --policy rag_citation_gate --json --no-decompose
+
+# 3) Compliance audit for stakeholders
+python -m app.cli audit examples/sample_claim.json --out reports/demo --no-decompose
+
+# 4) CI golden suite (fails if verdicts drift)
+python -m app.cli suite run examples/golden/suite.yaml
+python -m app.cli suite gate examples/golden/suite.yaml --lockfile examples/golden/suite.lock.json
+```
+
+Or hit the API:
+
+```bash
 python -m uvicorn app.api:app --reload
+curl -s http://127.0.0.1:8000/gate -H 'Content-Type: application/json' -d '{
+  "claim": {"text": "Earth has one natural satellite."},
+  "evidence": [{"text": "NASA confirms that Earth has one natural satellite called the Moon.",
+                "source": "NASA", "reliability": 0.98}],
+  "policy_id": "agent_tool_gate",
+  "decompose": false
+}'
+```
+
+You get: `decision`, `verdict`, `confidence`, `reasons`, `policy_id` — plus the VisionEval-compatible verification dossier.
+
+---
+
+## Product surfaces
+
+### 1. Decision policy engine
+
+Maps `verdict` + `confidence` (+ optional risk tags) → **`ALLOW` | `REVIEW` | `BLOCK`**.
+
+Documented presets (also under `app/policies/*.yaml`):
+
+| Preset | Floor | Intent |
+|--------|-------|--------|
+| `agent_tool_gate` | 0.55 | Before a side-effecting agent tool |
+| `rag_citation_gate` | 0.65 | Does this citation support the answer? |
+| `caption_gate` | 0.45 | VisionEval-style caption checks |
+
+Configure via env (`TRUTHGRAPH_POLICY_*`), YAML, or request body. Risk tags like `payment` / `delete` can force `BLOCK`; `pii` can escalate `ALLOW` → `REVIEW`.
+
+### 2. Agent gate
+
+- FastAPI `POST /gate` — verify + policy in one call
+- Python helper: `from app.services.gate import gate, gate_context, gated`
+- Clear JSON: `decision`, `verdict`, `confidence`, `reasons`, `policy_id`
+
+```python
+from app.services.gate import gate, gate_context
+from app.models.claim import Claim
+from app.models.evidence import Evidence
+
+claim = Claim(text="Earth has one natural satellite.")
+evidence = [Evidence(text="NASA confirms Earth has one natural satellite called the Moon.",
+                     source="NASA", reliability=0.98)]
+
+gr = gate(claim, evidence, policy_id="agent_tool_gate", decompose=False)
+if gr.allowed():
+    call_tool()
+
+# Or block by default unless ALLOW:
+with gate_context(claim, evidence, decompose=False):
+    call_tool()
+```
+
+### 3. Audit / compliance dossier
+
+```bash
+python -m app.cli audit examples/sample_claim.json --out reports/audit
+# → reports/audit/audit.json + audit.md
+```
+
+Streamlit demo includes **Export audit** download buttons.
+
+### 4. Golden claim suite + CI gate
+
+```text
+examples/golden/suite.yaml      # locked scenarios
+examples/golden/suite.lock.json # expected verdicts/decisions
 ```
 
 ```bash
-curl -s http://127.0.0.1:8000/verify \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "claim": { "text": "Earth has one natural satellite." },
-    "evidence": [
-      {
-        "text": "NASA confirms that Earth has one natural satellite called the Moon.",
-        "source": "NASA",
-        "reliability": 0.98
-      }
-    ]
-  }'
+python -m app.cli suite run examples/golden/suite.yaml
+python -m app.cli suite gate examples/golden/suite.yaml --lockfile examples/golden/suite.lock.json
 ```
 
-Or skip the server:
+Wired in GitHub Actions alongside pytest (VisionEval traps-gate energy: fail when expectations flip).
+
+### 5. RAG citation verify mode
+
+Primary business use case — ground an answer on its citations:
 
 ```bash
-python -m app.cli verify examples/sample_claim.json --json
+python -m app.cli gate examples/sample_rag.json --policy rag_citation_gate --json
 ```
 
-You get a dossier — verdict, confidence, matched keywords, reasons — not a vibes score.
+API: send `answer` + `citations[]` to `/verify` or `/gate` (or set `"mode": "rag"` with claim/evidence). Reasons include which citations supported vs contradicted.
+
+### 6. Deterministic verification core (unchanged contract)
+
+`POST /verify` still returns VisionEval-compatible fields:
+
+`claim`, `verdict`, `confidence`, `supporting_evidence`, `contradicting_evidence`, `matched_keywords`
+
+Additive: `reasons`, `subclaims`, `breakdown`, `meta`.
+
+---
+
+## The problem (honest)
+
+LLMs and agents make claims constantly — tool arguments, RAG answers, captions.
+
+Black-box judges don’t help when you need to **debug**. A paid LLM-as-judge adds cost, drift, and another model you can’t inspect. If the evidence isn’t yours, you’re not evaluating your pipeline — you’re hoping the internet agrees.
+
+TruthGraph is narrower: **given the evidence you already have**, does this claim look supported, contradicted, or under-specified — and should the agent **ALLOW**, **REVIEW**, or **BLOCK**.
 
 ---
 
 ## Evidence-only metrics (honest)
 
-TruthGraph scores **only the evidence you submit**. Confidence is strength of support/contradiction on that set after relevance and reliability weighting — not “probability the claim is true in the world.”
+TruthGraph scores **only the evidence you submit**. Confidence is strength of support/contradiction on that set — not “probability the claim is true in the world.”
 
 | Output | Meaning |
 |--------|---------|
-| `supported` | Relevant evidence leans support |
-| `contradicted` | Relevant evidence leans contradiction (negation / number clash / opposing stance) |
-| `insufficient` | No relevant evidence, or scores too close / sub-claims disagree |
-| `confidence` | Strength of the decisive side on the submitted set (capped at 1.0) |
-| Automated tests | **34** (deterministic path; CI on Python 3.11 / 3.12) |
+| `supported` / `contradicted` / `insufficient` | Evidence stance after relevance + reliability |
+| `ALLOW` / `REVIEW` / `BLOCK` | Policy decision over verdict + confidence (+ risk tags) |
+| Automated tests | **71** offline, deterministic (CI on Python 3.11 / 3.12) |
+| Golden suite | **7** locked cases gated in CI |
 
-No invented accuracy %, F1, or leaderboard numbers here.
+No invented accuracy %, F1, or “used by Fortune 500.”
 
 ---
 
@@ -143,7 +176,7 @@ No invented accuracy %, F1, or leaderboard numbers here.
 git clone https://github.com/nishanttyagi28/truthgraph.git
 cd truthgraph
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
+source .venv/bin/activate
 pip install -r requirements.txt
 python -m pytest -v
 ```
@@ -154,107 +187,81 @@ python -m pytest -v
 python -m uvicorn app.api:app --reload
 ```
 
-Open `http://127.0.0.1:8000/docs`.
-
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Liveness + version / feature flags |
+| `GET` | `/health` | Liveness + version / flags |
 | `GET` | `/sources` | Source reputation registry |
-| `POST` | `/verify` | Verify one claim (rich dossier) |
+| `GET` | `/policies` | Decision-policy presets |
+| `POST` | `/verify` | Verify one claim (VisionEval-compatible) |
 | `POST` | `/verify/batch` | Verify many claims |
-| `GET` | `/history` | Recent rows when history is enabled |
-
-`POST /verify` body:
-
-```json
-{
-  "claim": { "text": "Earth has one natural satellite." },
-  "evidence": [
-    {
-      "text": "Earth has one natural satellite called the Moon.",
-      "source": "NASA",
-      "reliability": 0.95
-    }
-  ],
-  "decompose": false,
-  "use_semantic": false,
-  "use_registry": false
-}
-```
-
-VisionEval-compatible core fields always present:
-
-`claim`, `verdict`, `confidence`, `supporting_evidence`, `contradicting_evidence`, `matched_keywords`
-
-Additive v2 fields: `reasons`, `subclaims`, `breakdown`, `meta`.
+| `POST` | `/gate` | Verify + ALLOW/REVIEW/BLOCK |
+| `GET` | `/history` | Recent rows when history enabled |
 
 ### CLI
 
 ```bash
 python -m app.cli verify examples/sample_claim.json --json
-python -m app.cli verify examples/sample_claim.yaml --json --semantic
-python -m app.cli sources --json
-```
-
-### Sample script / Streamlit / Docker
-
-```bash
-python main.py                          # writes reports/verification_report.json
-streamlit run streamlit_app.py          # optional demo UI
-docker build -t truthgraph .
-docker run --rm -p 8000:8000 truthgraph
+python -m app.cli gate examples/sample_claim.json --policy agent_tool_gate --json
+python -m app.cli audit examples/sample_claim.json --out reports/audit
+python -m app.cli suite run examples/golden/suite.yaml
+python -m app.cli suite gate examples/golden/suite.yaml --lockfile examples/golden/suite.lock.json
+python -m app.cli policies --json
 ```
 
 ### Environment flags
 
 | Variable | Default | Effect |
 |----------|---------|--------|
-| `TRUTHGRAPH_SEMANTIC` | `0` | Enable hybrid TF-IDF cosine blend |
-| `TRUTHGRAPH_KEYWORD_WEIGHT` | `0.7` | Keyword weight when semantic on |
-| `TRUTHGRAPH_SEMANTIC_WEIGHT` | `0.3` | Semantic weight when semantic on |
-| `TRUTHGRAPH_DECOMPOSE` | `1` | Decompose compound claims by default |
+| `TRUTHGRAPH_SEMANTIC` | `0` | Hybrid TF-IDF cosine blend |
+| `TRUTHGRAPH_DECOMPOSE` | `1` | Decompose compound claims |
 | `TRUTHGRAPH_HISTORY` | `0` | Persist dossiers to SQLite |
-| `TRUTHGRAPH_HISTORY_DB` | `data/verification_history.sqlite3` | DB path |
+| `TRUTHGRAPH_POLICY` | `agent_tool_gate` | Default gate preset |
+| `TRUTHGRAPH_POLICY_MIN_CONFIDENCE_ALLOW` | (preset) | Override allow floor |
+| `TRUTHGRAPH_POLICY_BLOCK_ON_CONTRADICTED` | (preset) | Block contradicted |
+| `TRUTHGRAPH_POLICY_BLOCK_RISK_TAGS` | (preset) | Comma-separated force-BLOCK tags |
 
 ---
 
 ## Architecture
 
 ```text
-Client / CLI / Streamlit
-        │
-        ▼
-   FastAPI (Pydantic)
+Claim / answer + evidence / citations
         │
         ▼
  Claim decomposer (optional)
         │
         ▼
- Text analyzer  +  optional semantic (TF-IDF cosine)
+ Text analyzer + optional semantic (TF-IDF)
         │
         ▼
- Evidence classifier (relevance / negation / numbers)
+ Verdict + confidence + reasons   ←── /verify (stable)
         │
         ▼
- Reliability weighting (± source registry)
+ Policy engine (thresholds + risk tags)
         │
         ▼
- Verdict + confidence + reasons + subclaim rollup
+ ALLOW | REVIEW | BLOCK + audit dossier  ←── /gate
         │
         ▼
- JSON dossier  (± SQLite history)
+ Golden suite lockfile (CI)
 ```
 
 ```text
 truthgraph/
-├── app/                 # api, cli, config, models, services
-├── examples/
-├── tests/               # 34 tests
-├── streamlit_app.py
-├── main.py
-├── Dockerfile
-├── .github/workflows/ci.yml
-└── requirements.txt
+├── app/
+│   ├── api.py              # /verify, /gate, /policies
+│   ├── cli.py              # verify, gate, audit, suite
+│   ├── policies/           # YAML presets
+│   └── services/
+│       ├── policy.py       # decision engine
+│       ├── gate.py         # agent helper / decorator
+│       ├── audit.py        # Markdown + JSON export
+│       ├── rag.py          # citation verify mode
+│       ├── suite.py        # golden suite + lockfile gate
+│       └── verifier*.py    # deterministic core
+├── examples/golden/        # suite + lockfile
+├── tests/
+└── .github/workflows/ci.yml
 ```
 
 ---
@@ -263,10 +270,15 @@ truthgraph/
 
 - Does **not** fetch evidence from the internet.
 - Does **not** guarantee submitted evidence is factually correct.
-- Default path is lexical/deterministic; optional semantic is lightweight TF-IDF cosine, not a large embedding model.
-- Source reputation defaults are heuristics; caller reliability wins unless `use_registry=true`.
-- Confidence is evidence-relative, not a calibrated real-world probability.
-- Claim decomposition is rule-based (sentences / light clause splits), not full linguistic parsing.
+- Default path is lexical/deterministic; optional semantic is lightweight TF-IDF cosine.
+- Policy thresholds are heuristics you own — tune per product surface.
+- Confidence is evidence-relative, not a calibrated world probability.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for v2.1.0 (evidence gate / business packaging).
 
 ---
 
