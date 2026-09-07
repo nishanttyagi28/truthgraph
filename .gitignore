@@ -5,3 +5,10 @@ __pycache__/
 .env
 .coverage
 htmlcov/
+data/*.sqlite3
+*.sqlite3
+.streamlit/secrets.toml
+dist/
+build/
+*.egg-info/
+.pytest-tmp/

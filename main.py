@@ -1,3 +1,5 @@
+"""Demo script — runs a sample verification and writes reports/verification_report.json."""
+
 from pathlib import Path
 
 from app.models.claim import Claim
@@ -16,9 +18,7 @@ def save_report(report_json: str) -> Path:
 
 
 def main() -> None:
-    claim = Claim(
-        text="The Earth has one natural satellite."
-    )
+    claim = Claim(text="The Earth has one natural satellite.")
 
     evidence_items = [
         Evidence(
@@ -43,7 +43,7 @@ def main() -> None:
         ),
     ]
 
-    result = verify_claim(claim, evidence_items)
+    result = verify_claim(claim, evidence_items, decompose=False)
     report_json = result.model_dump_json(indent=2)
     report_path = save_report(report_json)
 

@@ -1,5 +1,8 @@
-import re
+"""Deterministic keyword / negation / number helpers."""
 
+from __future__ import annotations
+
+import re
 
 STOP_WORDS = {
     "a",

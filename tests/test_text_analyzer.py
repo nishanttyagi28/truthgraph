@@ -26,6 +26,12 @@ def test_calculate_relevance():
     assert "satellite" in keywords
 
 
+def test_calculate_relevance_empty_claim_tokens():
+    score, keywords = calculate_relevance("the a an", "Earth moon")
+    assert score == 0.0
+    assert keywords == []
+
+
 def test_contains_negation():
     assert contains_negation("Earth does not have two moons") is True
     assert contains_negation("Earth has one moon") is False
