@@ -1,0 +1,87 @@
+name: truthgraph-golden
+version: "1"
+cases:
+  - id: supported_moon
+    description: High-reliability support → ALLOW under agent_tool_gate
+    claim: Earth has one natural satellite.
+    evidence:
+      - text: NASA confirms that Earth has one natural satellite called the Moon.
+        source: NASA
+        reliability: 0.98
+    expected_verdict: supported
+    expected_decision: ALLOW
+    policy_id: agent_tool_gate
+    decompose: false
+
+  - id: contradicted_negation
+    description: Negation mismatch → BLOCK
+    claim: Earth has one natural satellite.
+    evidence:
+      - text: Earth does not have one natural satellite according to this survey note.
+        source: Anon
+        reliability: 0.9
+    expected_verdict: contradicted
+    expected_decision: BLOCK
+    policy_id: agent_tool_gate
+    decompose: false
+
+  - id: insufficient_irrelevant
+    description: Unrelated evidence → REVIEW
+    claim: Earth has one natural satellite.
+    evidence:
+      - text: Python is a programming language used worldwide today by engineers.
+        source: Book
+        reliability: 0.9
+    expected_verdict: insufficient
+    expected_decision: REVIEW
+    policy_id: agent_tool_gate
+    decompose: false
+
+  - id: rag_citation_supported
+    description: Citation supports answer → ALLOW under rag_citation_gate
+    claim: Earth has one natural satellite called the Moon.
+    evidence:
+      - text: Astronomers note Earth has one natural satellite known as the Moon.
+        source: Textbook
+        reliability: 0.92
+    expected_verdict: supported
+    expected_decision: ALLOW
+    policy_id: rag_citation_gate
+    decompose: false
+
+  - id: low_confidence_review
+    description: Supported but low reliability → REVIEW (below 0.55 floor)
+    claim: Vaccines reduce severe disease outcomes in adults.
+    evidence:
+      - text: Some vaccines reduce severe disease outcomes in adults in trials.
+        source: Blog
+        reliability: 0.4
+    expected_verdict: supported
+    expected_decision: REVIEW
+    policy_id: agent_tool_gate
+    decompose: false
+
+  - id: risk_tag_payment_block
+    description: Even supported claims with payment risk tag → BLOCK
+    claim: Earth has one natural satellite.
+    evidence:
+      - text: NASA confirms that Earth has one natural satellite called the Moon.
+        source: NASA
+        reliability: 0.98
+    expected_verdict: supported
+    expected_decision: BLOCK
+    policy_id: agent_tool_gate
+    risk_tags: [payment]
+    decompose: false
+
+  - id: caption_gate_allow
+    description: Caption-style short claim passes caption_gate at lower floor
+    claim: The cat is sitting on the mat near a window.
+    evidence:
+      - text: Ground truth notes the cat is sitting on the mat near a window sill.
+        source: caption-gt
+        reliability: 0.85
+    expected_verdict: supported
+    expected_decision: ALLOW
+    policy_id: caption_gate
+    decompose: false

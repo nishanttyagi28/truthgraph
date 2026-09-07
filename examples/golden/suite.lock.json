@@ -1,0 +1,41 @@
+{
+  "schema": "truthgraph.suite.lock.v1",
+  "suite": "truthgraph-golden",
+  "cases": {
+    "supported_moon": {
+      "verdict": "supported",
+      "decision": "ALLOW",
+      "confidence": 0.98
+    },
+    "contradicted_negation": {
+      "verdict": "contradicted",
+      "decision": "BLOCK",
+      "confidence": 0.9
+    },
+    "insufficient_irrelevant": {
+      "verdict": "insufficient",
+      "decision": "REVIEW",
+      "confidence": 0.0
+    },
+    "rag_citation_supported": {
+      "verdict": "supported",
+      "decision": "ALLOW",
+      "confidence": 0.766
+    },
+    "low_confidence_review": {
+      "verdict": "supported",
+      "decision": "REVIEW",
+      "confidence": 0.4
+    },
+    "risk_tag_payment_block": {
+      "verdict": "supported",
+      "decision": "BLOCK",
+      "confidence": 0.98
+    },
+    "caption_gate_allow": {
+      "verdict": "supported",
+      "decision": "ALLOW",
+      "confidence": 0.85
+    }
+  }
+}

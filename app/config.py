@@ -26,4 +26,7 @@ SEMANTIC_WEIGHT: float = float(os.getenv("TRUTHGRAPH_SEMANTIC_WEIGHT", "0.3"))
 # Claim decomposition into atomic sub-claims (default on for richer dossiers).
 DECOMPOSE_CLAIMS: bool = _env_bool("TRUTHGRAPH_DECOMPOSE", True)
 
-APP_VERSION = "2.0.0"
+# Default decision policy preset for /gate and helpers.
+DEFAULT_POLICY: str = os.getenv("TRUTHGRAPH_POLICY", "agent_tool_gate")
+
+APP_VERSION = "2.1.0"

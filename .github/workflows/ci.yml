@@ -32,3 +32,10 @@ jobs:
           TRUTHGRAPH_SEMANTIC: "0"
           TRUTHGRAPH_HISTORY: "0"
         run: python -m pytest -v
+
+      - name: Golden suite gate (lockfile)
+        env:
+          TRUTHGRAPH_SEMANTIC: "0"
+        run: |
+          python -m app.cli suite run examples/golden/suite.yaml
+          python -m app.cli suite gate examples/golden/suite.yaml --lockfile examples/golden/suite.lock.json
