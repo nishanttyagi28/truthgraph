@@ -1,29 +1,48 @@
 # TruthGraph
 
-Explainable claim verification: you bring the evidence, TruthGraph returns a structured verdict you can inspect.
+**You bring the evidence. TruthGraph returns an inspectable verdict — supported, contradicted, or insufficient — you can put in a CI gate or an agent loop.**
 
 [![CI](https://github.com/nishanttyagi28/truthgraph/actions/workflows/ci.yml/badge.svg)](https://github.com/nishanttyagi28/truthgraph/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-REST_API-009688?logo=fastapi&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-34_passing-brightgreen)
 
-Follow the build on X [@tnishant838](https://x.com/tnishant838).
+Built by [Nishant Tyagi](https://github.com/nishanttyagi28) · follow the build on X [@tnishant838](https://x.com/tnishant838)
 
 ---
 
-## In simple terms
+## The problem
 
-If a recruiter asks “so what does this project actually do?”, here’s how I’d answer.
+LLMs and agents make claims constantly — captions, tool answers, RAG citations, “facts” in a reply.
 
-You give TruthGraph a **claim** and the **evidence** you already have. It does **not** browse the web or invent facts. It compares the texts with deterministic rules (keywords, negation, numbers, source reliability), optionally splits a compound claim into smaller pieces, and returns:
+Black-box judges don’t help much when you need to **debug**. A single score hides *why*. A paid LLM-as-judge adds cost, drift, and another model you can’t inspect. And if the evidence isn’t yours, you’re not evaluating your pipeline — you’re hoping the internet agrees.
 
-- a verdict: `supported` | `contradicted` | `insufficient`
-- a confidence score grounded in the submitted evidence
-- matched keywords, reasons, and (when useful) per-subclaim breakdowns
+You need something narrower and more honest: **given the evidence you already have**, does this claim look supported, contradicted, or under-specified — with reasons you can read.
 
-That’s the whole idea: **evidence in → inspectable dossier out.**
+---
 
-**Consumer:** [VisionEval](https://github.com/nishanttyagi28/VisionEval) vendors a compatible copy of this core to check vision-model captions against ground-truth text. The shared contract is `verdict` + `confidence` + `matched_keywords` (plus evidence lists). TruthGraph v2 keeps those fields stable and adds richer dossier fields on top.
+## What TruthGraph is
+
+TruthGraph is an **explainable claim-verification service**. You POST a claim and a list of evidence snippets. It does **not** browse the web or invent facts. It compares texts with a deterministic core (keywords, negation, numbers, source reliability), optionally splits compound claims into atomic pieces, and returns a structured dossier:
+
+- `verdict`: `supported` | `contradicted` | `insufficient`
+- `confidence` grounded in the submitted evidence (not a world-truth probability)
+- matched keywords, reasons, and per-subclaim breakdowns when decomposition runs
+
+**Evidence in → inspectable dossier out.** Same contract my [VisionEval](https://github.com/nishanttyagi28/VisionEval) consumer expects (`verdict` + `confidence` + `matched_keywords` + evidence lists), with richer v2 fields on top.
+
+No paid API. No model download for the default path. FastAPI, CLI, optional Streamlit, Docker, CI.
+
+---
+
+## Who it’s for
+
+- **Agent builders** who want a cheap, inspectable check before an agent trusts its own answer
+- **RAG / eval engineers** gating “does this citation actually support the claim?”
+- **VisionEval-style caption checks** — treat a model caption as a claim against ground-truth text
+- **CI gates** — fail the build when a locked claim set flips from supported to contradicted
+
+If you need a full fact-checker that crawls the web, this isn’t that product. If you need a **local, explainable support/contradict layer over your evidence**, it is.
 
 ---
 
@@ -31,38 +50,80 @@ That’s the whole idea: **evidence in → inspectable dossier out.**
 
 ### Deterministic verification core
 
-Keyword relevance, stop-word filtering, negation mismatch, numerical contradiction, and reliability-weighted scoring — all inspectable, no paid API.
+Keyword relevance, stop-word filtering, negation mismatch, numerical contradiction, reliability-weighted scoring — all inspectable.
 
 ```bash
 python -m uvicorn app.api:app --reload
 # POST /verify  →  supported | contradicted | insufficient
 ```
 
+**Why it helps:** You can explain a fail in review without opening another LLM transcript.
+
 ### Claim decomposition → rolled-up verdict
 
-Compound claims can be split into atomic sub-claims, verified one by one, then rolled into a parent verdict with reasons.
+Compound claims split into atomic sub-claims, verified one by one, then rolled into a parent verdict with reasons.
+
+**Why it helps:** “Half right” stops looking like a clean pass. You see which piece broke.
 
 ### Hybrid scoring (optional)
 
-Keep the keyword path for CI and default runs. Flip a flag for lightweight offline TF-IDF cosine similarity blended with keywords. No model download, no network.
+Default path stays keyword/deterministic for CI. Flip a flag for offline TF-IDF cosine blended with keywords — no model download, no network.
+
+**Why it helps:** Slightly better lexical overlap when wording drifts, without pulling torch or hitting an API.
 
 ### Source reputation registry
 
-Built-in defaults (e.g. NASA, CDC, Wikipedia, anonymous blog) with caller override. `GET /sources` lists them.
+Built-in defaults (NASA, CDC, Wikipedia, anonymous blog, …) with caller override. `GET /sources` lists them.
 
-### Batch API, CLI, optional history & demo
+**Why it helps:** Reliability isn’t a mystery constant — you can see and override it.
+
+### Batch API, CLI, history, demo surface
 
 - `POST /verify/batch`, `GET /health`, `GET /sources`
 - CLI: JSON/YAML in, `--json` out
-- Optional SQLite history behind `TRUTHGRAPH_HISTORY=1` (default off)
-- Optional Streamlit demo (`streamlit_app.py`)
+- Optional SQLite history behind `TRUTHGRAPH_HISTORY=1` (off by default)
+- Streamlit demo (`streamlit_app.py`)
 - Dockerfile + GitHub Actions pytest CI
+
+**Why it helps:** Same engine from a curl, a pipeline job, or a quick UI — without rewriting the core.
+
+---
+
+## Quick demo
+
+```bash
+pip install -r requirements.txt
+python -m uvicorn app.api:app --reload
+```
+
+```bash
+curl -s http://127.0.0.1:8000/verify \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "claim": { "text": "Earth has one natural satellite." },
+    "evidence": [
+      {
+        "text": "NASA confirms that Earth has one natural satellite called the Moon.",
+        "source": "NASA",
+        "reliability": 0.98
+      }
+    ]
+  }'
+```
+
+Or skip the server:
+
+```bash
+python -m app.cli verify examples/sample_claim.json --json
+```
+
+You get a dossier — verdict, confidence, matched keywords, reasons — not a vibes score.
 
 ---
 
 ## Evidence-only metrics (honest)
 
-TruthGraph scores **only the evidence you submit**. Confidence is not “probability the claim is true in the world.” It reflects internal support/contradiction strength after relevance and reliability weighting.
+TruthGraph scores **only the evidence you submit**. Confidence is strength of support/contradiction on that set after relevance and reliability weighting — not “probability the claim is true in the world.”
 
 | Output | Meaning |
 |--------|---------|
@@ -70,12 +131,13 @@ TruthGraph scores **only the evidence you submit**. Confidence is not “probabi
 | `contradicted` | Relevant evidence leans contradiction (negation / number clash / opposing stance) |
 | `insufficient` | No relevant evidence, or scores too close / sub-claims disagree |
 | `confidence` | Strength of the decisive side on the submitted set (capped at 1.0) |
+| Automated tests | **34** (deterministic path; CI on Python 3.11 / 3.12) |
 
-No invented accuracy %, F1, or benchmark leaderboard numbers in this README.
+No invented accuracy %, F1, or leaderboard numbers here.
 
 ---
 
-## Quick start
+## Install
 
 ```bash
 git clone https://github.com/nishanttyagi28/truthgraph.git
@@ -83,15 +145,8 @@ cd truthgraph
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-### Tests
-
-```bash
 python -m pytest -v
 ```
-
-Default tests use the deterministic keyword path only (no network).
 
 ### API
 
@@ -101,38 +156,6 @@ python -m uvicorn app.api:app --reload
 
 Open `http://127.0.0.1:8000/docs`.
 
-### CLI
-
-```bash
-python -m app.cli verify examples/sample_claim.json --json
-python -m app.cli verify examples/sample_claim.yaml --json --semantic
-python -m app.cli sources --json
-```
-
-### Sample script
-
-```bash
-python main.py
-# writes reports/verification_report.json
-```
-
-### Streamlit demo (optional)
-
-```bash
-streamlit run streamlit_app.py
-```
-
-### Docker
-
-```bash
-docker build -t truthgraph .
-docker run --rm -p 8000:8000 truthgraph
-```
-
----
-
-## API
-
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Liveness + version / feature flags |
@@ -141,7 +164,7 @@ docker run --rm -p 8000:8000 truthgraph
 | `POST` | `/verify/batch` | Verify many claims |
 | `GET` | `/history` | Recent rows when history is enabled |
 
-### `POST /verify` example
+`POST /verify` body:
 
 ```json
 {
@@ -159,15 +182,30 @@ docker run --rm -p 8000:8000 truthgraph
 }
 ```
 
-Response always includes VisionEval-compatible core fields:
+VisionEval-compatible core fields always present:
 
 `claim`, `verdict`, `confidence`, `supporting_evidence`, `contradicting_evidence`, `matched_keywords`
 
 Additive v2 fields: `reasons`, `subclaims`, `breakdown`, `meta`.
 
----
+### CLI
 
-## Environment flags
+```bash
+python -m app.cli verify examples/sample_claim.json --json
+python -m app.cli verify examples/sample_claim.yaml --json --semantic
+python -m app.cli sources --json
+```
+
+### Sample script / Streamlit / Docker
+
+```bash
+python main.py                          # writes reports/verification_report.json
+streamlit run streamlit_app.py          # optional demo UI
+docker build -t truthgraph .
+docker run --rm -p 8000:8000 truthgraph
+```
+
+### Environment flags
 
 | Variable | Default | Effect |
 |----------|---------|--------|
@@ -207,21 +245,11 @@ Client / CLI / Streamlit
  JSON dossier  (± SQLite history)
 ```
 
----
-
-## Project structure
-
 ```text
 truthgraph/
-├── app/
-│   ├── api.py
-│   ├── cli.py
-│   ├── config.py
-│   ├── models/
-│   └── services/          # analyzer, verifier*, decomposer, semantic, reputation, history
-│                          # *verifier.py re-exports verifier_impl (atomic + rollup)
+├── app/                 # api, cli, config, models, services
 ├── examples/
-├── tests/
+├── tests/               # 34 tests
 ├── streamlit_app.py
 ├── main.py
 ├── Dockerfile
@@ -231,23 +259,17 @@ truthgraph/
 
 ---
 
-## Build note
-
-As noted on my X account [@tnishant838](https://x.com/tnishant838), TruthGraph is hands-on practice. I own the product direction, architecture, and acceptance of changes. AI assistance was used for parts of implementation and debugging; everything is reviewed and tested against the intended design.
-
----
-
 ## Limitations
 
 - Does **not** fetch evidence from the internet.
-- Does **not** guarantee that submitted evidence is factually correct.
-- Default path is lexical/deterministic; optional semantic similarity is lightweight TF-IDF cosine, not a large embedding model.
-- Source reputation defaults are heuristics; caller reliability overrides unless `use_registry=true`.
-- Confidence is evidence-relative, not a calibrated probability of real-world truth.
+- Does **not** guarantee submitted evidence is factually correct.
+- Default path is lexical/deterministic; optional semantic is lightweight TF-IDF cosine, not a large embedding model.
+- Source reputation defaults are heuristics; caller reliability wins unless `use_registry=true`.
+- Confidence is evidence-relative, not a calibrated real-world probability.
 - Claim decomposition is rule-based (sentences / light clause splits), not full linguistic parsing.
 
 ---
 
 ## Author
 
-Built by [Nishant Tyagi](https://github.com/nishanttyagi28) · [@tnishant838](https://x.com/tnishant838)
+[Nishant Tyagi](https://github.com/nishanttyagi28) · [@tnishant838](https://x.com/tnishant838)
