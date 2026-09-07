@@ -1,0 +1,16 @@
+policy_id: agent_tool_gate
+description: >
+  Default agent tool gate: BLOCK contradicted claims; ALLOW only when supported
+  with confidence ≥ 0.55; REVIEW insufficient / low-confidence support.
+block_on_contradicted: true
+min_confidence_allow: 0.55
+block_low_confidence: false
+block_on_insufficient: false
+review_on_insufficient: true
+block_risk_tags:
+  - irreversible
+  - payment
+  - delete
+review_risk_tags:
+  - pii
+  - external_write

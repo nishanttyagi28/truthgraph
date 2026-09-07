@@ -12,3 +12,4 @@ dist/
 build/
 *.egg-info/
 .pytest-tmp/
+reports/demo/

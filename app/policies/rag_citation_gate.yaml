@@ -1,0 +1,14 @@
+policy_id: rag_citation_gate
+description: >
+  RAG citation gate: stricter support floor (0.65). BLOCK contradicted;
+  REVIEW thin or missing citation support.
+block_on_contradicted: true
+min_confidence_allow: 0.65
+block_low_confidence: false
+block_on_insufficient: false
+review_on_insufficient: true
+block_risk_tags:
+  - medical
+  - legal
+review_risk_tags:
+  - ungrounded

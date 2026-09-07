@@ -1,0 +1,17 @@
+{
+  "answer": "Earth has one natural satellite called the Moon.",
+  "citations": [
+    {
+      "text": "Astronomers note Earth has one natural satellite known as the Moon.",
+      "source": "Astronomy Textbook",
+      "reliability": 0.92,
+      "citation_id": "doc-12"
+    },
+    {
+      "text": "Mars has two moons named Phobos and Deimos.",
+      "source": "Space Magazine",
+      "reliability": 0.75,
+      "citation_id": "doc-44"
+    }
+  ]
+}

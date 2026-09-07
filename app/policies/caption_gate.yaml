@@ -1,0 +1,11 @@
+policy_id: caption_gate
+description: >
+  Caption / VisionEval-style gate: looser floor (0.45) for short captions;
+  BLOCK clear contradictions; REVIEW insufficient evidence.
+block_on_contradicted: true
+min_confidence_allow: 0.45
+block_low_confidence: false
+block_on_insufficient: false
+review_on_insufficient: true
+block_risk_tags: []
+review_risk_tags: []
