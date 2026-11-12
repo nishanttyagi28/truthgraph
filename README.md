@@ -2,6 +2,8 @@
 
 Checks a claim against evidence you supply and returns a verdict plus an `ALLOW` / `REVIEW` / `BLOCK` decision. It runs offline and is deterministic, with no LLM judge.
 
+Live demo: https://truthgraph-fawn.vercel.app
+
 [![CI](https://github.com/nishanttyagi28/truthgraph/actions/workflows/ci.yml/badge.svg)](https://github.com/nishanttyagi28/truthgraph/actions/workflows/ci.yml)
 
 Agents and RAG pipelines constantly make claims: a tool argument, an answer with citations, an image caption. TruthGraph answers a narrow question about each one: given the evidence you already have, is this claim supported, contradicted, or not covered? It then applies a policy that turns the result into a decision you can put in front of a tool call, a citation, or a CI job. Every decision comes with plain-text reasons, so you can see why it was made.
