@@ -1,6 +1,5 @@
 {
   "installCommand": "pip install -r requirements-web.txt",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index.py" }],
   "functions": {
     "api/index.py": {
       "includeFiles": "{app/**,examples/**}"
