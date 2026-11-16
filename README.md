@@ -2,7 +2,7 @@
 
 Checks a claim against evidence you supply and returns a verdict plus an `ALLOW` / `REVIEW` / `BLOCK` decision. It runs offline and is deterministic, with no LLM judge.
 
-Live demo: https://truthgraph-fawn.vercel.app
+Live demo: https://truthgraph-fawn.vercel.app/docs (API docs; the root path has no page)
 
 [![CI](https://github.com/nishanttyagi28/truthgraph/actions/workflows/ci.yml/badge.svg)](https://github.com/nishanttyagi28/truthgraph/actions/workflows/ci.yml)
 
